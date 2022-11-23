@@ -1,0 +1,49 @@
+* Fun Facts in C
+This is just a collection of fun things I discovered about C.
+
+** Structures as Ints
+Struct values are stored contigiously (at least in gcc) and can be 
+written and read like any other int using pointer magic:
+
+#+begin_src C
+#include <stdio.h>
+struct Tup {
+  char val1;
+  char val2;
+}
+int main() {
+  struct Tup test = {.val1 = 0xff, .val2 = 0xff};
+  printf("%i\n", *&test);
+  // ^ prints "65535"
+  *(short *)& test = 0x0000;
+  printf("%i\n", *&test);
+  // ^ prints "0"
+  return 0;
+}
+#+end_src
+
+As you can see, printing the value doesn't seem to require any
+explicit typecasts, only dereferencing the address of the struct,
+which leads me to believe that it's implicitly casted as `int`.
+
+** Structure Layout
+As already said before, structs are stored contigiously, however, one
+interesting point is that they're stored in reverse order. Fields 
+that are defined first actually come last in memory. This may be due
+to linux being little-endian or something about gcc. There doesn't
+seem to be a difference between storing them on the heap and stack.
+
+#+begin_src C
+typedef struct Tup {
+  short val0;
+  short val1;
+} Tup;
+int main() {
+  Tup test = {.val0 = 0xff88, .val1 = 0xff88};
+  printf("%X\n", *&test);
+  // ^ prints "FF88FF88"
+  test.val0 = 0xff00;
+  printf("%X\n", *&test);
+  // ^ prints "FF88FF00"
+}
+#+end_src
